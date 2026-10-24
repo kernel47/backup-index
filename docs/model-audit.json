@@ -1,0 +1,668 @@
+{
+  "reviewed_on": "2026-10-24",
+  "project_name": "netbackup-py",
+  "project_version": "0.1.0",
+  "root": "/Users/ahmedhm/Documents/NetBackup Module",
+  "serialization": "model_dump(mode=\"json\"), by_alias=False",
+  "files": [
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/models/jobs.py",
+      "sha256": "a92c1fc4ad08c9e4622059c8915a731c292f14bb1803de119e12c84acb00013f"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/models/images.py",
+      "sha256": "8fcea4f5323d8b34c0b6bf79a6a14d3d510468ae4f3b4ea6f773d6a0421a00cd"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/models/policies.py",
+      "sha256": "f7938705e7f984df25b4b4600e397f9c227b94d0cc50b136d06a8e20ebdb1587"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/models/slp.py",
+      "sha256": "813f17c64fd797173894abc24acf40eb201f01b2b3f4b1fa5e5131d046fb0603"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/parsers/jobs.py",
+      "sha256": "61e7540304d86571ac94b740eab77ef9aa189488ed22ba5180703113bc3dfdc4"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/parsers/images.py",
+      "sha256": "b5a11310fb6a9031c27560a6c955dc7e786209f698453c212d8ec860d645b553"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/parsers/policies.py",
+      "sha256": "55da8bf46435bcc0a057120130c92385bf04cbc91f15a985438e03be77fcad90"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/parsers/slp.py",
+      "sha256": "ade0445a0eea9526c83ccf8cdfc8144d8ae9e8854cc10ac6a064029af09e5932"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/models/base.py",
+      "sha256": "0df01d5f71531dc4a3935c37220d22f8fe506a49ee8fb695b6becec51e7e77a6"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/nbu/collectors/base.py",
+      "sha256": "770c25adbeabae17a7568a985b56d1a8fdd9d486d24e97ddf2b8174400338963"
+    },
+    {
+      "path": "/Users/ahmedhm/Documents/NetBackup Module/pyproject.toml",
+      "sha256": "f7293928505dc6d2c162b4bf42df27a1e73e796526f6e0e4c1c05346eb3ebbf3"
+    }
+  ],
+  "decisions": [
+    "Job.job_id (alias id) is exported as job_id by the existing collector; keyword.",
+    "Job.type and Job.elapsed_seconds replace proposed job_type and elapsed_time.",
+    "Job.status is int | str | None: keyword, not integer.",
+    "Job.percent_complete is int | None: integer, not float.",
+    "Job.policy_type and schedule_type are not declared/populated; omitted from active mapping.",
+    "Image.retention_level is str | int | None: keyword, not integer.",
+    "Image.storage_location is declared and populated: keyword.",
+    "Image.num_files is absent: omitted until confirmed in source.",
+    "Policy.retention and SLP.retention are Any: kept under data.",
+    "SLP has active, status, target_storage; no declared state or slp_version.",
+    "No parse_content function was found in the inspected current nbu source.",
+    "Dates are datetime | str | None: validate UTC ISO-8601 before future ingestion; no parser changes.",
+    "NbuModel.extra=allow: undeclared extras are not automatically promoted to indexed fields."
+  ],
+  "jobs": [
+    {
+      "model": "NbuModel",
+      "name": "source",
+      "python_type": "str",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "source"
+    },
+    {
+      "model": "NbuModel",
+      "name": "raw",
+      "python_type": "dict[str, Any]",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "raw"
+    },
+    {
+      "model": "Job",
+      "name": "job_id",
+      "python_type": "int | str",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "job_id"
+    },
+    {
+      "model": "Job",
+      "name": "parent_job_id",
+      "python_type": "int | str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "parent_job_id"
+    },
+    {
+      "model": "Job",
+      "name": "type",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "type"
+    },
+    {
+      "model": "Job",
+      "name": "state",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "state"
+    },
+    {
+      "model": "Job",
+      "name": "status",
+      "python_type": "int | str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "status"
+    },
+    {
+      "model": "Job",
+      "name": "status_description",
+      "python_type": "str | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "status_description"
+    },
+    {
+      "model": "Job",
+      "name": "policy",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "policy"
+    },
+    {
+      "model": "Job",
+      "name": "client",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "client"
+    },
+    {
+      "model": "Job",
+      "name": "schedule",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "schedule"
+    },
+    {
+      "model": "Job",
+      "name": "storage_unit",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "storage_unit"
+    },
+    {
+      "model": "Job",
+      "name": "start_time",
+      "python_type": "datetime | str | None",
+      "indexed": true,
+      "opensearch_type": "date",
+      "path": "start_time"
+    },
+    {
+      "model": "Job",
+      "name": "end_time",
+      "python_type": "datetime | str | None",
+      "indexed": true,
+      "opensearch_type": "date",
+      "path": "end_time"
+    },
+    {
+      "model": "Job",
+      "name": "elapsed_seconds",
+      "python_type": "int | None",
+      "indexed": true,
+      "opensearch_type": "long",
+      "path": "elapsed_seconds"
+    },
+    {
+      "model": "Job",
+      "name": "kilobytes",
+      "python_type": "int | None",
+      "indexed": true,
+      "opensearch_type": "long",
+      "path": "kilobytes"
+    },
+    {
+      "model": "Job",
+      "name": "files",
+      "python_type": "int | None",
+      "indexed": true,
+      "opensearch_type": "long",
+      "path": "files"
+    },
+    {
+      "model": "Job",
+      "name": "percent_complete",
+      "python_type": "int | None",
+      "indexed": true,
+      "opensearch_type": "integer",
+      "path": "percent_complete"
+    },
+    {
+      "model": "Job",
+      "name": "backup_id",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "backup_id"
+    }
+  ],
+  "images": [
+    {
+      "model": "NbuModel",
+      "name": "source",
+      "python_type": "str",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "source"
+    },
+    {
+      "model": "NbuModel",
+      "name": "raw",
+      "python_type": "dict[str, Any]",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "raw"
+    },
+    {
+      "model": "Image",
+      "name": "image_id",
+      "python_type": "str",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "image_id"
+    },
+    {
+      "model": "Image",
+      "name": "backup_id",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "backup_id"
+    },
+    {
+      "model": "Image",
+      "name": "client",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "client"
+    },
+    {
+      "model": "Image",
+      "name": "policy",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "policy"
+    },
+    {
+      "model": "Image",
+      "name": "policy_type",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "policy_type"
+    },
+    {
+      "model": "Image",
+      "name": "schedule",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "schedule"
+    },
+    {
+      "model": "Image",
+      "name": "schedule_type",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "schedule_type"
+    },
+    {
+      "model": "Image",
+      "name": "backup_time",
+      "python_type": "datetime | str | None",
+      "indexed": true,
+      "opensearch_type": "date",
+      "path": "backup_time"
+    },
+    {
+      "model": "Image",
+      "name": "expiration_time",
+      "python_type": "datetime | str | None",
+      "indexed": true,
+      "opensearch_type": "date",
+      "path": "expiration_time"
+    },
+    {
+      "model": "Image",
+      "name": "retention_level",
+      "python_type": "str | int | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "retention_level"
+    },
+    {
+      "model": "Image",
+      "name": "copy_number",
+      "python_type": "int | None",
+      "indexed": true,
+      "opensearch_type": "integer",
+      "path": "copy_number"
+    },
+    {
+      "model": "Image",
+      "name": "storage_location",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "storage_location"
+    },
+    {
+      "model": "Image",
+      "name": "kilobytes",
+      "python_type": "int | None",
+      "indexed": true,
+      "opensearch_type": "long",
+      "path": "kilobytes"
+    }
+  ],
+  "policies": [
+    {
+      "model": "NbuModel",
+      "name": "source",
+      "python_type": "str",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "source"
+    },
+    {
+      "model": "NbuModel",
+      "name": "raw",
+      "python_type": "dict[str, Any]",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "raw"
+    },
+    {
+      "model": "Policy",
+      "name": "name",
+      "python_type": "str",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "name"
+    },
+    {
+      "model": "Policy",
+      "name": "policy_type",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "policy_type"
+    },
+    {
+      "model": "Policy",
+      "name": "active",
+      "python_type": "bool | None",
+      "indexed": true,
+      "opensearch_type": "boolean",
+      "path": "active"
+    },
+    {
+      "model": "Policy",
+      "name": "clients",
+      "python_type": "list[str]",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "clients"
+    },
+    {
+      "model": "Policy",
+      "name": "schedules",
+      "python_type": "list[Schedule]",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules"
+    },
+    {
+      "model": "Policy",
+      "name": "backup_selections",
+      "python_type": "list[str]",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "backup_selections"
+    },
+    {
+      "model": "Policy",
+      "name": "retention",
+      "python_type": "Any | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "retention"
+    },
+    {
+      "model": "Policy",
+      "name": "storage",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "storage"
+    },
+    {
+      "model": "Policy",
+      "name": "storage_is_slp",
+      "python_type": "bool | None",
+      "indexed": true,
+      "opensearch_type": "boolean",
+      "path": "storage_is_slp"
+    },
+    {
+      "model": "Policy",
+      "name": "slp",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "slp"
+    },
+    {
+      "model": "Schedule",
+      "name": "schedule_name",
+      "python_type": "str",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].schedule_name"
+    },
+    {
+      "model": "Schedule",
+      "name": "schedule_type",
+      "python_type": "str | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].schedule_type"
+    },
+    {
+      "model": "Schedule",
+      "name": "backup_type",
+      "python_type": "str | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].backup_type"
+    },
+    {
+      "model": "Schedule",
+      "name": "storage_is_slp",
+      "python_type": "bool | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].storage_is_slp"
+    },
+    {
+      "model": "Schedule",
+      "name": "slp",
+      "python_type": "str | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].slp"
+    },
+    {
+      "model": "Schedule",
+      "name": "backup_copies",
+      "python_type": "dict[str, Any] | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].backup_copies"
+    },
+    {
+      "model": "Schedule",
+      "name": "retention",
+      "python_type": "Any | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].retention"
+    },
+    {
+      "model": "Schedule",
+      "name": "exclude_dates",
+      "python_type": "Any | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].exclude_dates"
+    },
+    {
+      "model": "Schedule",
+      "name": "frequency_seconds",
+      "python_type": "int | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].frequency_seconds"
+    },
+    {
+      "model": "Schedule",
+      "name": "include_dates",
+      "python_type": "Any | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].include_dates"
+    },
+    {
+      "model": "Schedule",
+      "name": "start_window",
+      "python_type": "list[dict[str, Any]]",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].start_window"
+    },
+    {
+      "model": "Schedule",
+      "name": "storage",
+      "python_type": "str | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "schedules[].storage"
+    }
+  ],
+  "slps": [
+    {
+      "model": "NbuModel",
+      "name": "source",
+      "python_type": "str",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "source"
+    },
+    {
+      "model": "NbuModel",
+      "name": "raw",
+      "python_type": "dict[str, Any]",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "raw"
+    },
+    {
+      "model": "SLP",
+      "name": "name",
+      "python_type": "str",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "name"
+    },
+    {
+      "model": "SLP",
+      "name": "active",
+      "python_type": "bool | None",
+      "indexed": true,
+      "opensearch_type": "boolean",
+      "path": "active"
+    },
+    {
+      "model": "SLP",
+      "name": "status",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "status"
+    },
+    {
+      "model": "SLP",
+      "name": "operations",
+      "python_type": "list[SLPOperation]",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations"
+    },
+    {
+      "model": "SLP",
+      "name": "retention",
+      "python_type": "Any | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "retention"
+    },
+    {
+      "model": "SLP",
+      "name": "target_storage",
+      "python_type": "str | None",
+      "indexed": true,
+      "opensearch_type": "keyword",
+      "path": "target_storage"
+    },
+    {
+      "model": "SLPOperation",
+      "name": "operation",
+      "python_type": "str",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations[].operation"
+    },
+    {
+      "model": "SLPOperation",
+      "name": "target_storage",
+      "python_type": "str | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations[].target_storage"
+    },
+    {
+      "model": "SLPOperation",
+      "name": "retention",
+      "python_type": "Any | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations[].retention"
+    },
+    {
+      "model": "SLPOperation",
+      "name": "retention_type",
+      "python_type": "str | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations[].retention_type"
+    },
+    {
+      "model": "SLPOperation",
+      "name": "duplication",
+      "python_type": "bool | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations[].duplication"
+    },
+    {
+      "model": "SLPOperation",
+      "name": "operation_index",
+      "python_type": "int | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations[].operation_index"
+    },
+    {
+      "model": "SLPOperation",
+      "name": "source_operation_index",
+      "python_type": "int | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations[].source_operation_index"
+    },
+    {
+      "model": "SLPOperation",
+      "name": "storage",
+      "python_type": "dict[str, Any] | None",
+      "indexed": false,
+      "opensearch_type": null,
+      "path": "operations[].storage"
+    }
+  ]
+}

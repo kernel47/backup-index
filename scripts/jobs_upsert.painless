@@ -1,0 +1,64 @@
+// Contract: netbackup-py Job field names; UTC ISO-8601 dates. No state renaming.
+def incoming = params.document;
+def allowed = ['master_server','technology','region','job_id','parent_job_id','type','state','status','policy','client','schedule','storage_unit','elapsed_seconds','files','percent_complete','backup_id','start_time','end_time','updated_at','collected_at','kilobytes','data'];
+for (def key : incoming.keySet()) {
+    if (!allowed.contains(key)) { throw new IllegalArgumentException('Unknown job field'); }
+}
+if (incoming.master_server == null || incoming.job_id == null || incoming.start_time == null || incoming.updated_at == null || !(incoming.state instanceof String) || incoming.state.isEmpty()) {
+    throw new IllegalArgumentException('Missing job identity, observation or normalized state');
+}
+def observed = Instant.parse(incoming.updated_at);
+Instant.parse(incoming.start_time);
+if (incoming.data != null && !(incoming.data instanceof Map)) { throw new IllegalArgumentException('data must be an object'); }
+if (ctx.op == 'create') {
+    ctx._source.putAll(incoming); ctx._source.created_at = incoming.updated_at;
+    return;
+}
+if (ctx._source.master_server != incoming.master_server || ctx._source.job_id != incoming.job_id || ctx._source.start_time != incoming.start_time) {
+    ctx.op = 'none'; return;
+}
+if (ctx._source.updated_at == null || !observed.isAfter(Instant.parse(ctx._source.updated_at))) {
+    ctx.op = 'none'; return;
+}
+def oldState = ctx._source.state;
+boolean terminal = oldState == 'DONE' ||
+    (params.containsKey('terminal_states') && params.terminal_states.contains(oldState));
+def transitions = params.containsKey('allowed_transitions') ? params.allowed_transitions :
+    ['PENDING':['ACTIVE','DONE'], 'QUEUED':['ACTIVE','DONE'], 'ACTIVE':['DONE']];
+if (oldState == null || (terminal && incoming.state != oldState) ||
+    (incoming.state != oldState && (!transitions.containsKey(oldState) ||
+                                    !transitions[oldState].contains(incoming.state)))) {
+    ctx.op = 'none'; return;
+}
+// Existing identity and descriptive fields cannot be changed for this execution.
+for (def key : ['technology','region','parent_job_id','type','policy','client','schedule','storage_unit']) {
+    if (incoming[key] != null && ctx._source[key] != null && incoming[key] != ctx._source[key]) {
+        ctx.op = 'none'; return;
+    }
+}
+boolean correction = params.containsKey('allow_final_corrections') && params.allow_final_corrections == true;
+def next = new HashMap(ctx._source);
+for (def entry : incoming.entrySet()) {
+    def key = entry.getKey(); def value = entry.getValue();
+    if (value == null || ['updated_at','collected_at','data'].contains(key)) { continue; }
+    if (terminal && next[key] != null && next[key] != value && !correction) {
+        ctx.op = 'none'; return;
+    }
+    next[key] = value;
+}
+// Shallow, non-null merge of opaque data. Existing final values need opt-in correction.
+if (incoming.data != null) {
+    def merged = next.data == null ? new HashMap() : new HashMap(next.data);
+    for (def entry : incoming.data.entrySet()) {
+        if (entry.getValue() == null) { continue; }
+        if (terminal && merged[entry.getKey()] != null && merged[entry.getKey()] != entry.getValue() && !correction) {
+            ctx.op = 'none'; return;
+        }
+        merged[entry.getKey()] = entry.getValue();
+    }
+    next.data = merged;
+}
+next.updated_at = incoming.updated_at;
+if (incoming.collected_at != null) { next.collected_at = incoming.collected_at; }
+if (next.equals(ctx._source)) { ctx.op = 'none'; return; }
+ctx._source.clear(); ctx._source.putAll(next);

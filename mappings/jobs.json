@@ -1,0 +1,86 @@
+{
+  "index": "backup-jobs-v1",
+  "alias": "backup-jobs",
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "_source": {
+      "enabled": true
+    },
+    "dynamic": false,
+    "properties": {
+      "master_server": {
+        "type": "keyword"
+      },
+      "region": {
+        "type": "keyword"
+      },
+      "technology": {
+        "type": "keyword"
+      },
+      "job_id": {
+        "type": "keyword"
+      },
+      "parent_job_id": {
+        "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "policy": {
+        "type": "keyword"
+      },
+      "client": {
+        "type": "keyword"
+      },
+      "schedule": {
+        "type": "keyword"
+      },
+      "storage_unit": {
+        "type": "keyword"
+      },
+      "backup_id": {
+        "type": "keyword"
+      },
+      "start_time": {
+        "type": "date"
+      },
+      "end_time": {
+        "type": "date"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "collected_at": {
+        "type": "date"
+      },
+      "elapsed_seconds": {
+        "type": "long"
+      },
+      "kilobytes": {
+        "type": "long"
+      },
+      "files": {
+        "type": "long"
+      },
+      "percent_complete": {
+        "type": "integer"
+      },
+      "data": {
+        "type": "object",
+        "enabled": false
+      },
+      "updated_at": {
+        "type": "date"
+      }
+    }
+  }
+}

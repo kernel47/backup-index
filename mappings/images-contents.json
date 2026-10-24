@@ -1,0 +1,34 @@
+{
+  "index": "backup-images-contents-v1",
+  "alias": "backup-images-contents",
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "_source": {
+      "enabled": true
+    },
+    "dynamic": false,
+    "properties": {
+      "region": {
+        "type": "keyword"
+      },
+      "master_server": {
+        "type": "keyword"
+      },
+      "image_id": {
+        "type": "keyword"
+      },
+      "path": {
+        "type": "keyword"
+      },
+      "backup_time": {
+        "type": "date"
+      },
+      "created_at": {
+        "type": "date"
+      }
+    }
+  }
+}

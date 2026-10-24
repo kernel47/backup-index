@@ -1,0 +1,57 @@
+{
+  "index": "backup-slps-v1",
+  "alias": "backup-slps",
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "_source": {
+      "enabled": true
+    },
+    "dynamic": false,
+    "properties": {
+      "master_server": {
+        "type": "keyword"
+      },
+      "region": {
+        "type": "keyword"
+      },
+      "technology": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "target_storage": {
+        "type": "keyword"
+      },
+      "hash": {
+        "type": "keyword"
+      },
+      "active": {
+        "type": "boolean"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "collected_at": {
+        "type": "date"
+      },
+      "updated_at": {
+        "type": "date"
+      },
+      "data": {
+        "type": "object",
+        "enabled": false
+      },
+      "history": {
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}

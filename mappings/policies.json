@@ -1,0 +1,66 @@
+{
+  "index": "backup-policies-v1",
+  "alias": "backup-policies",
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "_source": {
+      "enabled": true
+    },
+    "dynamic": false,
+    "properties": {
+      "master_server": {
+        "type": "keyword"
+      },
+      "region": {
+        "type": "keyword"
+      },
+      "technology": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "policy_type": {
+        "type": "keyword"
+      },
+      "slp": {
+        "type": "keyword"
+      },
+      "storage": {
+        "type": "keyword"
+      },
+      "clients": {
+        "type": "keyword"
+      },
+      "hash": {
+        "type": "keyword"
+      },
+      "active": {
+        "type": "boolean"
+      },
+      "storage_is_slp": {
+        "type": "boolean"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "collected_at": {
+        "type": "date"
+      },
+      "updated_at": {
+        "type": "date"
+      },
+      "data": {
+        "type": "object",
+        "enabled": false
+      },
+      "history": {
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}

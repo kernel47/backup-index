@@ -1,0 +1,77 @@
+{
+  "index": "backup-images-v1",
+  "alias": "backup-images",
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "_source": {
+      "enabled": true
+    },
+    "dynamic": false,
+    "properties": {
+      "master_server": {
+        "type": "keyword"
+      },
+      "region": {
+        "type": "keyword"
+      },
+      "technology": {
+        "type": "keyword"
+      },
+      "image_id": {
+        "type": "keyword"
+      },
+      "backup_id": {
+        "type": "keyword"
+      },
+      "client": {
+        "type": "keyword"
+      },
+      "policy": {
+        "type": "keyword"
+      },
+      "policy_type": {
+        "type": "keyword"
+      },
+      "schedule": {
+        "type": "keyword"
+      },
+      "schedule_type": {
+        "type": "keyword"
+      },
+      "retention_level": {
+        "type": "keyword"
+      },
+      "storage_location": {
+        "type": "keyword"
+      },
+      "backup_time": {
+        "type": "date"
+      },
+      "expiration_time": {
+        "type": "date"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "collected_at": {
+        "type": "date"
+      },
+      "copy_number": {
+        "type": "integer"
+      },
+      "kilobytes": {
+        "type": "long"
+      },
+      "data": {
+        "type": "object",
+        "enabled": false
+      },
+      "updated_at": {
+        "type": "date"
+      }
+    }
+  }
+}

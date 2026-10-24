@@ -1,0 +1,57 @@
+// One current configuration plus a bounded, unindexed history; policies and SLPs.
+def incoming = params.document;
+def suppliedLimit = params.containsKey('max_history_versions') ? params.max_history_versions : 10;
+if (!(suppliedLimit instanceof Integer) && !(suppliedLimit instanceof Long)) {
+    throw new IllegalArgumentException('History limit must be an integer');
+}
+if (suppliedLimit < 0 || suppliedLimit > 2147483647L) {
+    throw new IllegalArgumentException('History limit out of range');
+}
+int limit = (int)suppliedLimit;
+if (!params.containsKey('kind') || !['policies','slps'].contains(params.kind)) {
+    throw new IllegalArgumentException('kind must be policies or slps');
+}
+def allowed = ['master_server','technology','region','name','hash','updated_at','collected_at','data'];
+if (params.kind == 'policies') { allowed.addAll(['policy_type','active','slp','storage','storage_is_slp','clients']); }
+else { allowed.addAll(['active','status','target_storage']); }
+for (def key : incoming.keySet()) {
+    if (!allowed.contains(key)) { throw new IllegalArgumentException('Unknown or script-owned configuration field'); }
+}
+if (incoming.master_server == null || incoming.name == null || incoming.updated_at == null ||
+    !(incoming.data instanceof Map) || !(incoming.hash instanceof String) || incoming.hash.length() != 64) {
+    throw new IllegalArgumentException('Missing identity, observation, SHA-256 or complete data');
+}
+def observed = Instant.parse(incoming.updated_at);
+for (int i = 0; i < incoming.hash.length(); i++) {
+    if ('0123456789abcdef'.indexOf(incoming.hash.substring(i, i + 1)) < 0) {
+        throw new IllegalArgumentException('Lowercase hexadecimal SHA-256 required');
+    }
+}
+if (ctx.op == 'create') {
+    ctx._source.putAll(incoming);
+    ctx._source.history = new ArrayList();
+    ctx._source.created_at = incoming.updated_at;
+    return;
+}
+if (ctx._source.master_server != incoming.master_server || ctx._source.name != incoming.name) {
+    ctx.op = 'none'; return;
+}
+def watermark = ctx._source.updated_at != null ? ctx._source.updated_at : ctx._source.created_at;
+if (watermark == null || !observed.isAfter(Instant.parse(watermark))) { ctx.op = 'none'; return; }
+if (ctx._source.hash == incoming.hash) {
+    // Keep created_at of the current version; advance only the last-seen watermark.
+    ctx._source.updated_at = incoming.updated_at;
+    if (incoming.collected_at != null) { ctx._source.collected_at = incoming.collected_at; }
+    return;
+}
+def versions = ctx._source.history == null ? new ArrayList() : new ArrayList(ctx._source.history);
+def previous = new HashMap(ctx._source);
+previous.remove('history');
+versions.add(previous);
+// Ascending chronological order, including legacy histories imported out of order.
+versions.sort((a, b) -> Instant.parse(a.created_at).compareTo(Instant.parse(b.created_at)));
+while (versions.size() > limit) { versions.remove(0); }
+ctx._source.clear(); ctx._source.putAll(incoming);
+ctx._source.history = versions;
+ctx._source.updated_at = incoming.updated_at;
+ctx._source.created_at = incoming.updated_at;
