@@ -1,6 +1,4 @@
 """Client officiel ; les erreurs distantes ne sont jamais affichées brutes."""
-import warnings
-
 from opensearchpy import OpenSearch
 from opensearchpy.exceptions import (
     AuthenticationException, AuthorizationException, ConnectionTimeout,
@@ -11,13 +9,12 @@ from app.config import Settings
 
 
 def create_client(settings: Settings) -> OpenSearch:
-    if not settings.opensearch_verify_ssl:
-        warnings.warn("Vérification TLS explicitement désactivée", stacklevel=2)
     return OpenSearch(
         hosts=[settings.opensearch_url],
         http_auth=(settings.opensearch_username, settings.opensearch_password.get_secret_value())
         if settings.opensearch_username else None,
         verify_certs=settings.opensearch_verify_ssl,
+        ssl_show_warn=settings.opensearch_verify_ssl,
         ca_certs=settings.opensearch_ca_cert or None,
         timeout=settings.opensearch_timeout,
         max_retries=0,

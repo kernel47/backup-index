@@ -99,13 +99,16 @@ def test_tls_client_options(monkeypatch, tmp_path):
     create_client(settings)
     options = constructor.call_args.kwargs
     assert options['verify_certs'] is True
+    assert options['ssl_show_warn'] is True
     assert options['ca_certs'] == '/tmp/ca.pem'
     assert options['timeout'] == 12
     assert options['http_auth'] == ('user', 'secret')
     assert 'secret' not in repr(settings)
     settings.opensearch_verify_ssl = False
-    with pytest.warns(UserWarning, match='explicitement désactivée'):
-        create_client(settings)
+    create_client(settings)
+    options = constructor.call_args.kwargs
+    assert options['verify_certs'] is False
+    assert options['ssl_show_warn'] is False
 
 
 def test_explicit_ca_resolution(tmp_path):

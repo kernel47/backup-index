@@ -26,6 +26,8 @@ Depuis un autre dossier, utiliser le chemin absolu du lanceur : `python /chemin/
 
 Configurer `.env` avant les commandes distantes : URL HTTPS, identifiants CIB et, si nécessaire, `OPENSEARCH_CA_CERT` pointant vers un bundle CA PEM interne. TLS est vérifié par défaut ; aucun contournement automatique n'est effectué. Les mots de passe et corps d'erreurs distants ne sont pas affichés.
 
+Avec `OPENSEARCH_VERIFY_SSL=false`, la désactivation explicite est transmise au client avec `ssl_show_warn=false` pour éviter les warnings TLS répétés. La vérification reste activée par défaut.
+
 | Variable | Défaut / rôle |
 | --- | --- |
 | `OPENSEARCH_URL` | URL HTTP(S) sans identifiants intégrés |
