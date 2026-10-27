@@ -2,7 +2,7 @@
 from opensearchpy import OpenSearch
 from opensearchpy.exceptions import RequestError, NotFoundError
 
-from backup_index.mappings import (
+from app.mappings import (
     MappingError, validate_mapping, compare_mappings, flatten_settings, count_fields,
 )
 

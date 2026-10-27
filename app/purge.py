@@ -5,9 +5,9 @@ from time import monotonic, sleep
 
 from opensearchpy.helpers import scan
 
-from backup_index.client import error_message
-from backup_index.indexes import ensure_concrete, guard, alias_state, require_alias
-from backup_index.mappings import MappingError
+from app.client import error_message
+from app.indexes import ensure_concrete, guard, alias_state, require_alias
+from app.mappings import MappingError
 
 # Deliberately separate from the ingestion scripts. No document/index deletion operation.
 PURGE_SCRIPT = r"""

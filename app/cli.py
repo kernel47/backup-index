@@ -6,10 +6,10 @@ from typing import Annotated
 
 import typer
 
-from backup_index.client import create_client, error_message
-from backup_index.config import load_settings
-from backup_index.indexes import create_index, check_index, apply_mapping, index_info, creation_preflight
-from backup_index.mappings import MappingError, load_mappings
+from app.client import create_client, error_message
+from app.config import load_settings
+from app.indexes import create_index, check_index, apply_mapping, index_info, creation_preflight
+from app.mappings import MappingError, load_mappings
 
 app = typer.Typer(no_args_is_help=True, help="Administration prudente des index OpenSearch Backup.")
 
@@ -30,11 +30,11 @@ def execute(ctx: typer.Context, action: str, target: str | None = None,
     try:
         settings = load_settings(ctx.obj)
         logging.basicConfig(level=settings.log_level, format="%(levelname)s: %(message)s")
-        logging.getLogger("backup_index").setLevel(settings.log_level)
+        logging.getLogger("app").setLevel(settings.log_level)
         # The transport can log raw response bodies. Only expose sanitized CLI errors.
         logging.getLogger("opensearch").disabled = True
         logging.getLogger("opensearchpy.trace").disabled = True
-        logging.getLogger("backup_index").debug("Commande : %s", action)
+        logging.getLogger("app").debug("Commande : %s", action)
         if action == "ping":
             client = create_client(settings)
             info = client.info()
@@ -174,7 +174,7 @@ def administrative(ctx: typer.Context, operation, remote: bool = True) -> None:
 @scripts_app.command('list')
 def scripts_list(ctx: typer.Context):
     """Lister les trois scripts locaux sans connexion."""
-    from backup_index.scripts import load_scripts
+    from app.scripts import load_scripts
     def operation(settings, client):
         for script_id in load_scripts():
             emit({'id': script_id, 'history_default': settings.history_max_versions
@@ -185,7 +185,7 @@ def scripts_list(ctx: typer.Context):
 @scripts_app.command('check')
 def scripts_check(ctx: typer.Context, all_scripts: bool = typer.Option(False, '--all')):
     """Comparer les scripts locaux avec les scripts stockés."""
-    from backup_index.scripts import load_scripts, script_plan
+    from app.scripts import load_scripts, script_plan
     def operation(settings, client):
         if not all_scripts:
             raise MappingError('Indiquer --all')
@@ -201,7 +201,7 @@ def scripts_install(ctx: typer.Context, all_scripts: bool = typer.Option(False, 
                     dry_run: bool = typer.Option(False, '--dry-run'),
                     replace: bool = typer.Option(False, '--replace')):
     """Installer ; un remplacement différent exige --replace après examen du diff."""
-    from backup_index.scripts import load_scripts, script_plan, install_scripts
+    from app.scripts import load_scripts, script_plan, install_scripts
     def operation(settings, client):
         if not all_scripts:
             raise MappingError('Indiquer --all')
@@ -227,7 +227,7 @@ def purge_history(ctx: typer.Context,
                   yes: bool = typer.Option(False, '--yes', help='Confirmer explicitement sans interaction'),
                   requests_per_second: float = typer.Option(1.0, '--requests-per-second')):
     """Prévisualiser, puis purger les anciennes versions de policies et/ou SLP."""
-    from backup_index.purge import purge_options, validate_history_aliases, plan_purge, execute_purge
+    from app.purge import purge_options, validate_history_aliases, plan_purge, execute_purge
     def operation(settings, client):
         options = purge_options(keep, older_than, all_versions)
         if not 0 < requests_per_second <= 10:
@@ -250,7 +250,7 @@ def purge_history(ctx: typer.Context,
 
 
 def destructive_command(ctx: typer.Context, target: str, action: str, dry_run: bool, yes: bool) -> None:
-    from backup_index.indexes import removal_plan, delete_index, clear_index
+    from app.indexes import removal_plan, delete_index, clear_index
     def operation(settings, client):
         documents = load_mappings(settings.mappings_dir, settings.index_prefix)
         matches = [doc for stem, doc in documents.items()

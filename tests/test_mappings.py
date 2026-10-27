@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from backup_index.mappings import (
+from app.mappings import (
     MappingError, load_mappings, compare_mappings, validate_mapping,
 )
 

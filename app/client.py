@@ -7,7 +7,7 @@ from opensearchpy.exceptions import (
     SSLError, ConnectionError, TransportError,
 )
 
-from backup_index.config import Settings
+from app.config import Settings
 
 
 def create_client(settings: Settings) -> OpenSearch:

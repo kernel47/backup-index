@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from backup_index.indexes import create_index, check_index, apply_mapping, index_info
-from backup_index.mappings import MappingError
+from app.indexes import create_index, check_index, apply_mapping, index_info
+from app.mappings import MappingError
 
 
 @pytest.fixture
@@ -136,7 +136,7 @@ def removal_client(client):
 
 
 def test_delete_index_explicit_and_verified(removal_client, document):
-    from backup_index.indexes import delete_index
+    from app.indexes import delete_index
     removal_client.indices.delete.return_value = {'acknowledged': True}
     removal_client.indices.exists.side_effect = [True, False]
     result = delete_index(removal_client, document, 'backup', 'test-uuid')
@@ -146,7 +146,7 @@ def test_delete_index_explicit_and_verified(removal_client, document):
 
 
 def test_clear_preserves_structure(removal_client, document):
-    from backup_index.indexes import clear_index
+    from app.indexes import clear_index
     removal_client.count.side_effect = [{'count': 12}, {'count': 0}]
     removal_client.delete_by_query.return_value = {'total': 12, 'deleted': 12, 'version_conflicts': 0, 'failures': [], 'timed_out': False}
     result = clear_index(removal_client, document, 'backup', 'test-uuid')
@@ -168,7 +168,7 @@ def test_clear_preserves_structure(removal_client, document):
     {},
 ])
 def test_clear_partial_failure(removal_client, document, response):
-    from backup_index.indexes import clear_index
+    from app.indexes import clear_index
     removal_client.delete_by_query.return_value = response
     result = clear_index(removal_client, document, 'backup', 'test-uuid')
     assert result['status'] == 'PARTIAL'
@@ -177,7 +177,7 @@ def test_clear_partial_failure(removal_client, document, response):
 
 @pytest.mark.parametrize('operation', ['clear_index', 'delete_index'])
 def test_removal_rejects_recreated_index(removal_client, document, operation):
-    import backup_index.indexes as indexes
+    import app.indexes as indexes
     with pytest.raises(MappingError, match='recréé'):
         getattr(indexes, operation)(removal_client, document, 'backup', 'old-uuid')
     removal_client.indices.delete.assert_not_called()
@@ -186,7 +186,7 @@ def test_removal_rejects_recreated_index(removal_client, document, operation):
 
 @pytest.mark.parametrize('operation', ['clear_index', 'delete_index'])
 def test_removal_rejects_prefix_and_alias(removal_client, document, operation):
-    import backup_index.indexes as indexes
+    import app.indexes as indexes
     document['index'] = 'other-jobs'
     with pytest.raises(MappingError):
         getattr(indexes, operation)(removal_client, document, 'backup', 'test-uuid')
@@ -200,7 +200,7 @@ def test_removal_rejects_prefix_and_alias(removal_client, document, operation):
 
 
 def test_delete_unacknowledged_is_partial(removal_client, document):
-    from backup_index.indexes import delete_index
+    from app.indexes import delete_index
     removal_client.indices.delete.return_value = {'acknowledged': False}
     removal_client.indices.exists.side_effect = [True, False]
     assert delete_index(removal_client, document, 'backup', 'test-uuid')['status'] == 'PARTIAL'
@@ -277,7 +277,7 @@ def test_failed_alias_verification_after_creation(client, document):
 
 def test_clear_and_delete_refuse_legacy_logical_conflict(client, document):
     from opensearchpy.exceptions import NotFoundError
-    from backup_index.indexes import removal_plan
+    from app.indexes import removal_plan
     client.indices.get_alias.side_effect = NotFoundError(404, 'missing', {})
     client.indices.exists.side_effect = lambda index: index == document['alias']
     with pytest.raises(MappingError, match='CONFLICT'):

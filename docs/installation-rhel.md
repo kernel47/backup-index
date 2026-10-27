@@ -14,23 +14,31 @@ Déployer le dossier source dans un emplacement accessible au compte d'administr
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+python -m pip install -r requirements.txt
 cp .env.example .env
 chmod 600 .env
 ```
 
 Utiliser l'index de paquets interne approuvé si l'accès PyPI est interdit. Ne pas utiliser `sudo pip`.
 
+Pour une installation sans accès à un index de paquets, utiliser un dossier de wheels préparé pour la version Python et la plateforme RHEL cibles :
+
+```bash
+python -m pip install --no-index --find-links /chemin/wheelhouse -r requirements.txt
+```
+
+Aucune installation du projet comme paquet n’est nécessaire. Conserver `main.py`, `app/`, `mappings/` et `scripts/` ensemble. Depuis un autre dossier, lancer `python /chemin/backup-index/main.py validate --all` ; les chemins par défaut restent ancrés à la racine du projet.
+
 Configurer les variables de `.env` : adresse HTTPS, identifiants fournis par CIB et chemin vers le bundle CA interne PEM. Par exemple `OPENSEARCH_CA_CERT=/chemin/approuve/ca-cib.pem`. Le compte doit pouvoir lire ce fichier ; sa gestion et son renouvellement suivent les procédures CIB. Garder `OPENSEARCH_VERIFY_SSL=true`. Il n'est pas nécessaire de modifier le magasin de certificats global pour fournir ce bundle au client.
 
 ```bash
-backup-index validate --all
-backup-index ping
-backup-index list
-backup-index create --all
-backup-index check --all
-backup-index info --all
-backup-index apply jobs --dry-run
+python main.py validate --all
+python main.py ping
+python main.py list
+python main.py create --all
+python main.py check --all
+python main.py info --all
+python main.py apply jobs --dry-run
 ```
 
 Valider les shards/répliques dans les JSON avant `create` et examiner le dry-run avant `apply jobs`. Les commandes de création et d'application modifient le cluster ciblé. Aucun service systemd n'est créé : l'outil est exécuté à la demande.
@@ -38,15 +46,15 @@ Valider les shards/répliques dans les JSON avant `create` et examiner le dry-ru
 Pour une configuration externe au code :
 
 ```bash
-backup-index --env-file /chemin/config/.env check --all
+python main.py --env-file /chemin/config/.env check --all
 ```
 
-Configurer `MAPPINGS_DIR` en chemin absolu ou relatif au dossier de ce `.env`. Les variables d'environnement système priment sur le fichier. Les fichiers de mapping doivent rester disponibles après l'installation éditable.
+Configurer `MAPPINGS_DIR` en chemin absolu ou relatif au dossier de ce `.env`. Les variables d'environnement système priment sur le fichier. Conserver le dossier du projet complet, notamment `mappings/` et `scripts/`.
 
 Tests sans cluster :
 
 ```bash
-pip install -e '.[test]'
+python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
@@ -57,10 +65,10 @@ Voir le README pour les codes de sortie, les permissions à faire autoriser et l
 Après configuration, examiner les scripts sans les installer implicitement :
 
 ```bash
-backup-index scripts list
-backup-index scripts check --all
-backup-index scripts install --all --dry-run
-backup-index purge history --keep 5 --dry-run
+python main.py scripts list
+python main.py scripts check --all
+python main.py scripts install --all --dry-run
+python main.py purge history --keep 5 --dry-run
 ```
 
 Ces dry-runs ne modifient pas le cluster. L’installation réelle des scripts exige une commande explicite ; la purge réelle demande confirmation ou `--yes`. `HISTORY_MAX_VERSIONS=10` prépare le contrat de la future ingestion, sans modifier les mappings ni purger périodiquement les données. Voir [la stratégie V2](index-strategy.md) et [le catalogue documentaire](netbackup-attributes.md).

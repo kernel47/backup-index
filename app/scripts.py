@@ -4,8 +4,8 @@ from pathlib import Path
 
 from opensearchpy.exceptions import NotFoundError
 
-from backup_index.config import PROJECT_ROOT
-from backup_index.mappings import MappingError
+from app.config import PROJECT_ROOT
+from app.mappings import MappingError
 
 SCRIPT_NAMES = ('jobs_upsert', 'images_upsert', 'configuration_upsert')
 

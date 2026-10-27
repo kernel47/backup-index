@@ -5,9 +5,9 @@ import pytest
 from opensearchpy.exceptions import NotFoundError
 from typer.testing import CliRunner
 
-from backup_index.cli import app
-from backup_index.scripts import load_scripts, script_plan, install_scripts
-from backup_index.mappings import MappingError
+from app.cli import app
+from app.scripts import load_scripts, script_plan, install_scripts
+from app.mappings import MappingError
 
 
 def test_local_scripts():
@@ -67,7 +67,7 @@ def test_concurrent_script_change_refused():
 def test_install_dry_run(monkeypatch):
     client = MagicMock()
     client.get_script.return_value = {'script': {'lang': 'painless', 'source': 'old'}}
-    monkeypatch.setattr('backup_index.cli.create_client', lambda _: client)
+    monkeypatch.setattr('app.cli.create_client', lambda _: client)
     result = CliRunner().invoke(app, ['scripts', 'install', '--all', '--dry-run'])
     assert result.exit_code == 0, result.output
     assert 'DIFFERENT' in result.output and 'DRY-RUN' in result.output
@@ -77,8 +77,8 @@ def test_install_dry_run(monkeypatch):
 def test_catalog_provenance_and_separation():
     import json
     from pathlib import Path
-    from backup_index.config import PROJECT_ROOT
-    from backup_index.mappings import load_mappings
+    from app.config import PROJECT_ROOT
+    from app.mappings import load_mappings
     documents = load_mappings(PROJECT_ROOT / 'mappings', 'backup')
     total = 0
     for kind in ('jobs', 'images', 'policies', 'slps'):
@@ -105,8 +105,8 @@ def test_catalog_provenance_and_separation():
 def test_ingestion_script_fields_match_current_mappings():
     import ast
     import re
-    from backup_index.config import PROJECT_ROOT
-    from backup_index.mappings import load_mappings
+    from app.config import PROJECT_ROOT
+    from app.mappings import load_mappings
     documents = load_mappings(PROJECT_ROOT / 'mappings', 'backup')
     sources = load_scripts()
     for kind in ('jobs', 'images'):

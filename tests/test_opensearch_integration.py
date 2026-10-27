@@ -14,10 +14,10 @@ import uuid
 import pytest
 from opensearchpy import OpenSearch
 
-from backup_index.config import PROJECT_ROOT
-from backup_index.mappings import load_mappings
-from backup_index.scripts import load_scripts, script_plan, install_scripts
-from backup_index.purge import purge_options, plan_purge, execute_purge
+from app.config import PROJECT_ROOT
+from app.mappings import load_mappings
+from app.scripts import load_scripts, script_plan, install_scripts
+from app.purge import purge_options, plan_purge, execute_purge
 
 pytestmark = [pytest.mark.integration,
               pytest.mark.skipif(os.environ.get('BACKUP_INDEX_RUN_INTEGRATION') != '1',
@@ -243,7 +243,7 @@ def test_hash_format_checked(cluster, index_factory):
 
 
 def test_real_versioned_creation_and_alias(cluster):
-    from backup_index.indexes import create_index, check_index
+    from app.indexes import create_index, check_index
     document = deepcopy(load_mappings(PROJECT_ROOT / 'mappings', 'backup')['jobs'])
     prefix = 'backup-test-' + uuid.uuid4().hex
     document.update(index=prefix + '-jobs-v1', alias=prefix + '-jobs')
