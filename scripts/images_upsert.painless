@@ -1,6 +1,6 @@
 // Partial enrichments; null means unavailable, never erase a known value.
 def incoming = params.document;
-def allowed = ['master_server','technology','region','image_id','backup_id','client','policy','policy_type','schedule','schedule_type','backup_time','expiration_time','retention_level','copy_number','storage_location','kilobytes','updated_at','collected_at','data'];
+/*__CONTRACT__*/
 for (def key : incoming.keySet()) {
     if (!allowed.contains(key)) { throw new IllegalArgumentException('Unknown image field'); }
 }
@@ -12,9 +12,16 @@ if (incoming.data != null && !(incoming.data instanceof Map)) { throw new Illega
 if (ctx.op == 'create') {
     ctx._source.putAll(incoming); ctx._source.created_at = incoming.updated_at; return;
 }
-if (ctx._source.master_server != incoming.master_server || ctx._source.image_id != incoming.image_id ||
-    ctx._source.updated_at == null || !observed.isAfter(Instant.parse(ctx._source.updated_at))) {
+for (def key : identity) {
+    if (ctx._source[key] != incoming[key]) { ctx.op = 'none'; return; }
+}
+if (ctx._source.updated_at == null || !observed.isAfter(Instant.parse(ctx._source.updated_at))) {
     ctx.op = 'none'; return;
+}
+for (def key : immutable) {
+    if (incoming[key] != null && ctx._source[key] != null && incoming[key] != ctx._source[key]) {
+        ctx.op = 'none'; return;
+    }
 }
 boolean correction = params.containsKey('allow_corrections') && params.allow_corrections == true;
 def next = new HashMap(ctx._source);

@@ -103,7 +103,7 @@ def test_partial_results(monkeypatch, response):
 
 def test_cli_confirmation_and_dry_run(monkeypatch):
     client = mock_client(monkeypatch)
-    monkeypatch.setattr('app.cli.create_client', lambda _: client)
+    monkeypatch.setattr('app.commands.runtime.create_client', lambda _: client)
     runner = CliRunner()
     result = runner.invoke(app, ['purge', 'history', '--keep', '5', '--type', 'policies', '--dry-run'])
     assert result.exit_code == 0 and 'DRY-RUN' in result.output
@@ -116,7 +116,7 @@ def test_cli_confirmation_and_dry_run(monkeypatch):
 def test_cli_yes_and_replay(monkeypatch):
     client = mock_client(monkeypatch)
     client.update_by_query.return_value = {'updated': 1, 'deleted': 0, 'version_conflicts': 0, 'noops': 0, 'failures': [], 'timed_out': False, 'total': 1}
-    monkeypatch.setattr('app.cli.create_client', lambda _: client)
+    monkeypatch.setattr('app.commands.runtime.create_client', lambda _: client)
     result = CliRunner().invoke(app, ['purge', 'history', '--all', '--type', 'policies', '--yes'])
     assert result.exit_code == 0, result.output
     client.update_by_query.assert_called_once()
@@ -153,7 +153,7 @@ def test_alias_conflict_blocks_purge_before_scan(monkeypatch):
     client.indices.get_alias.return_value = {'backup-policies-v2': {'aliases': {'backup-policies': {}}}}
     scanned = MagicMock()
     monkeypatch.setattr('app.purge.scan', scanned)
-    monkeypatch.setattr('app.cli.create_client', lambda _: client)
+    monkeypatch.setattr('app.commands.runtime.create_client', lambda _: client)
     result = CliRunner().invoke(app, ['purge', 'history', '--all', '--type', 'policies', '--yes'])
     assert result.exit_code == 2 and 'CONFLICT' in result.output
     scanned.assert_not_called()

@@ -1,6 +1,6 @@
 // Contract: netbackup-py Job field names; UTC ISO-8601 dates. No state renaming.
 def incoming = params.document;
-def allowed = ['master_server','technology','region','job_id','parent_job_id','type','state','status','policy','client','schedule','storage_unit','elapsed_seconds','files','percent_complete','backup_id','start_time','end_time','updated_at','collected_at','kilobytes','data'];
+/*__CONTRACT__*/
 for (def key : incoming.keySet()) {
     if (!allowed.contains(key)) { throw new IllegalArgumentException('Unknown job field'); }
 }
@@ -14,8 +14,8 @@ if (ctx.op == 'create') {
     ctx._source.putAll(incoming); ctx._source.created_at = incoming.updated_at;
     return;
 }
-if (ctx._source.master_server != incoming.master_server || ctx._source.job_id != incoming.job_id || ctx._source.start_time != incoming.start_time) {
-    ctx.op = 'none'; return;
+for (def key : identity) {
+    if (ctx._source[key] != incoming[key]) { ctx.op = 'none'; return; }
 }
 if (ctx._source.updated_at == null || !observed.isAfter(Instant.parse(ctx._source.updated_at))) {
     ctx.op = 'none'; return;
@@ -31,7 +31,7 @@ if (oldState == null || (terminal && incoming.state != oldState) ||
     ctx.op = 'none'; return;
 }
 // Existing identity and descriptive fields cannot be changed for this execution.
-for (def key : ['technology','region','parent_job_id','type','policy','client','schedule','storage_unit']) {
+for (def key : immutable) {
     if (incoming[key] != null && ctx._source[key] != null && incoming[key] != ctx._source[key]) {
         ctx.op = 'none'; return;
     }

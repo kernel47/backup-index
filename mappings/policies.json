@@ -62,5 +62,18 @@
         "enabled": false
       }
     }
+  },
+  "ingestion": {
+    "required": [
+      "master_server",
+      "name",
+      "updated_at",
+      "hash",
+      "data"
+    ],
+    "identity": [
+      "master_server",
+      "name"
+    ]
   }
 }

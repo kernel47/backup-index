@@ -11,9 +11,7 @@ int limit = (int)suppliedLimit;
 if (!params.containsKey('kind') || !['policies','slps'].contains(params.kind)) {
     throw new IllegalArgumentException('kind must be policies or slps');
 }
-def allowed = ['master_server','technology','region','name','hash','updated_at','collected_at','data'];
-if (params.kind == 'policies') { allowed.addAll(['policy_type','active','slp','storage','storage_is_slp','clients']); }
-else { allowed.addAll(['active','status','target_storage']); }
+/*__CONTRACT__*/
 for (def key : incoming.keySet()) {
     if (!allowed.contains(key)) { throw new IllegalArgumentException('Unknown or script-owned configuration field'); }
 }
@@ -33,8 +31,8 @@ if (ctx.op == 'create') {
     ctx._source.created_at = incoming.updated_at;
     return;
 }
-if (ctx._source.master_server != incoming.master_server || ctx._source.name != incoming.name) {
-    ctx.op = 'none'; return;
+for (def key : identity) {
+    if (ctx._source[key] != incoming[key]) { ctx.op = 'none'; return; }
 }
 def watermark = ctx._source.updated_at != null ? ctx._source.updated_at : ctx._source.created_at;
 if (watermark == null || !observed.isAfter(Instant.parse(watermark))) { ctx.op = 'none'; return; }

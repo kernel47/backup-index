@@ -258,6 +258,16 @@ Les dates du contrat de script sont des chaînes UTC ISO-8601 à format stable, 
 
 ## Scripts d’upsert
 
+### Génération depuis les mappings
+
+Les fichiers `scripts/*.painless` sont des modèles métier contenant un marqueur `/*__CONTRACT__*/`. Ils ne doivent pas être installés directement. `app/script_generation.py` remplace ce marqueur par le contrat généré depuis `mappings.properties` et `ingestion` du JSON correspondant. `app/ingestion.py` valide les règles ; `app/scripts.py` compare et installe les sources générées. Les commandes `backup-index scripts list/check/install` utilisent le dossier `MAPPINGS_DIR` et le préfixe configurés, y compris avec `--env-file`.
+
+`ingestion.required` liste les champs obligatoires non nuls (chaînes non vides). `ingestion.identity` liste les composants obligatoires et immuables de l’identité ; elle doit conserver les composants métier indispensables. `ingestion.mutable` déclare les champs jobs/images dont une valeur connue peut évoluer, sous les protections métier existantes. Un nouveau champ de mapping est autorisé automatiquement et fixe par défaut. Une valeur manquante peut être enrichie. `created_at`/`history` restent gérés par le script ; les dates de suivi et `data` conservent leur traitement dédié. Les identités ne peuvent pas être déclarées modifiables.
+
+Policies/SLP ont des contrats générés indépendamment, dans le même script `backup_configuration_upsert` et sélectionnés par `params.kind`. Elles conservent le remplacement de snapshot et l’historisation par hash ; leur liste `mutable` est absente ou vide. Le hash de Collector doit couvrir les nouveaux champs métier. `images-contents` ne reçoit aucun script ni règle d’ingestion supplémentaire.
+
+La génération est déterministe et effectuée en mémoire sans publication implicite. Après modification du JSON : valider, appliquer les ajouts de mapping, prévisualiser les différences de scripts puis les publier avec `backup-index scripts install --all --replace`. Ni l’index physique ni l’alias ne changent automatiquement. `ingestion` est une métadonnée locale, jamais envoyée à OpenSearch. Les trois IDs de scripts et les paramètres attendus par Collector restent stables.
+
 Trois IDs stables : `backup_jobs_upsert`, `backup_images_upsert`, `backup_configuration_upsert`. L’installation est explicite ; un script différent demande `--replace` après affichage du diff. Les installations de scripts ne sont pas transactionnelles ; l’API ne propose pas de compare-and-swap atomique, donc sérialiser les interventions administratives.
 
 Le contrat utilise `scripted_upsert: true` avec `upsert: {}`. La branche `ctx.op == 'create'` traite explicitement l’insertion initiale. Les branches d’Update Document utilisent `ctx.op = 'none'` pour produire un résultat noop. Les scripts ne font aucune requête HTTP et n’accèdent à aucun autre document ou index.
@@ -285,7 +295,7 @@ Les attributs fixes déjà connus (`technology`, `region`, `parent_job_id`, `typ
 
 Paramètres : `document`, `allow_corrections` facultatif (false). Identité requise : `master_server`, `image_id`, `updated_at`.
 
-Une observation plus récente peut enrichir un champ absent. Remplacer une valeur métier connue exige `allow_corrections=true`, y compris pour expiration, copie ou stockage ; cela permet des corrections contrôlées sans supposer que l’image est éternellement immuable. Les arrivées anciennes sont ignorées. La source et l’identité d’image ne changent jamais à `_id` constant. Les champs omis/null ne suppriment pas les valeurs existantes. `data` utilise la même fusion de premier niveau. Aucun champ `state` d’image n’est inventé dans cette révision alignée sur le modèle actuel.
+Une observation plus récente peut enrichir un champ absent. Remplacer une valeur métier connue exige sa présence dans `ingestion.mutable` et `allow_corrections=true`, y compris pour expiration, copie ou stockage ; cela permet des corrections contrôlées sans supposer que l’image est éternellement immuable. Un champ fixe reste protégé même avec cette option. Les arrivées anciennes sont ignorées. Le master et l’identité d’image ne changent jamais à `_id` constant. Les champs omis/null ne suppriment pas les valeurs existantes. `data` utilise la même fusion de premier niveau et l’option de correction. Aucun champ `state` d’image n’est inventé dans cette révision alignée sur le modèle actuel.
 
 ### Policies et SLP
 

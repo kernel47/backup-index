@@ -16,13 +16,14 @@ Depuis le dossier du projet, avec Python 3.12 installé :
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+python install.py
 cp .env.example .env
 chmod 600 .env
 ```
 
-Pour les tests, installer aussi `python -m pip install -r requirements-dev.txt`. Aucune installation du projet comme paquet n’est nécessaire : conserver le dossier complet et lancer `python main.py --help` depuis sa racine. Voir les guides [macOS](docs/installation-macos.md) et [RHEL](docs/installation-rhel.md). Ne pas remplacer le Python système RHEL, créer de service systemd ou désactiver SELinux.
+Pour les tests, installer aussi `python -m pip install -r requirements-dev.txt`. Aucune installation du projet comme paquet n’est nécessaire : `python install.py` crée la commande `backup-index` dans le dossier `bin` de l’environnement virtuel actif. Conserver le dossier du projet à son emplacement ; relancer cet installateur après déplacement. La commande fonctionne depuis tout dossier lorsque le venv est activé. Voir les guides [macOS](docs/installation-macos.md) et [RHEL](docs/installation-rhel.md). Ne pas remplacer le Python système RHEL, créer de service systemd ou désactiver SELinux.
 
-Depuis un autre dossier, utiliser le chemin absolu du lanceur : `python /chemin/backup-index/main.py validate --all`. Les chemins par défaut restent ancrés à la racine du projet.
+Depuis un autre dossier, utiliser aussi `backup-index validate --all` (venv activé), ou `/chemin/backup-index/.venv/bin/backup-index validate --all` sans activation. Les chemins par défaut restent ancrés à la racine du projet.
 
 Configurer `.env` avant les commandes distantes : URL HTTPS, identifiants CIB et, si nécessaire, `OPENSEARCH_CA_CERT` pointant vers un bundle CA PEM interne. TLS est vérifié par défaut ; aucun contournement automatique n'est effectué. Les mots de passe et corps d'erreurs distants ne sont pas affichés.
 
@@ -40,7 +41,7 @@ Avec `OPENSEARCH_VERIFY_SSL=false`, la désactivation explicite est transmise au
 | `LOG_LEVEL` | `INFO` |
 | `HISTORY_MAX_VERSIONS` | 10 anciennes versions ; contrat de la future ingestion, pas un setting d'index |
 
-Les variables système priment sur `.env`. Les chemins par défaut sont ancrés au projet, indépendamment du répertoire courant. Avec `python main.py --env-file /chemin/.env ...`, les chemins relatifs CA/mappings sont ancrés au dossier de ce fichier. Un préfixe différent nécessite aussi d'adapter `index` et `alias` dans les JSON ; aucun renommage distant n'est effectué.
+Les variables système priment sur `.env`. Les chemins par défaut sont ancrés au projet, indépendamment du répertoire courant. Avec `backup-index --env-file /chemin/.env ...`, les chemins relatifs CA/mappings sont ancrés au dossier de ce fichier. Un préfixe différent nécessite aussi d'adapter `index` et `alias` dans les JSON ; aucun renommage distant n'est effectué.
 
 ## Cinq alias, cinq index physiques
 
@@ -79,14 +80,14 @@ Les settings initiaux sont 1 shard / 1 réplique, à valider selon le cluster CI
 ## Commandes
 
 ```bash
-python main.py list
-python main.py validate --all
-python main.py ping
-python main.py create --all
-python main.py check --all
-python main.py apply jobs --dry-run
-python main.py apply jobs
-python main.py info --all
+backup-index list
+backup-index validate --all
+backup-index ping
+backup-index create --all
+backup-index check --all
+backup-index apply jobs --dry-run
+backup-index apply jobs
+backup-index info --all
 ```
 
 Une cible peut être `jobs`, `backup-jobs` ou `backup-jobs-v1` : dans les trois cas, la CLI retrouve le fichier déclaré et applique le mapping au physique. `list` affiche alias et index. `list` et `validate` restent locaux. Tous les JSON sont validés avant les opérations d'index : noms, préfixe, version physique, doublons index/alias, propriétés et settings.
@@ -97,14 +98,37 @@ Une cible peut être `jobs`, `backup-jobs` ou `backup-jobs-v1` : dans les trois 
 
 ## Scripts stockés
 
+Les sources Painless sont régénérées en mémoire à chaque `scripts list`, `scripts check` ou `scripts install`, à partir des JSON du dossier `MAPPINGS_DIR` et des modèles métier de `scripts/`. La génération est locale et déterministe ; aucun fichier généré n’est à maintenir. Le dry-run affiche les différences avec le cluster ; seule l’installation explicite publie les sources.
+
+Chaque mapping jobs/images/policies/SLP contient une section locale `ingestion`, à côté de `settings` et `mappings` :
+
+```json
+"ingestion": {
+  "required": ["master_server", "job_id", "start_time", "updated_at", "state"],
+  "identity": ["master_server", "job_id", "start_time"],
+  "mutable": ["state", "status", "end_time", "elapsed_seconds", "kilobytes", "files", "percent_complete", "backup_id"]
+}
+```
+
+- `mappings.properties` détermine les champs autorisés. `created_at` et `history` restent réservés au script.
+- `required` définit les champs non nuls obligatoires ; les chaînes vides sont refusées. Les exigences minimales des modèles métier restent protégées.
+- `identity` définit les composants obligatoires qui ne peuvent jamais changer dans un document existant. Cette section ne calcule pas le `_id` : Collector conserve le contrat UUID documenté.
+- `mutable` indique les champs jobs/images dont une valeur connue peut évoluer. Les nouveaux champs sont fixes par défaut, mais peuvent être enrichis lorsqu’ils sont absents. Pour les jobs, la protection des terminaux reste prioritaire ; pour les images, les remplacements exigent toujours `allow_corrections=true`.
+
+`updated_at`, `collected_at` et l’objet opaque `data` suivent leurs règles métier dédiées, indépendamment de cette classification. Policies/SLP utilisent des snapshots complets comparés par `hash` et n’ont pas de liste `mutable` : tout ajout métier pertinent doit aussi entrer dans le hash calculé par Collector. `images-contents` conserve ses six champs et l’écriture Bulk `create`, sans section `ingestion` ni script.
+
+Les listes sont validées localement : champs inconnus, doublons, champs réservés et identités déclarées modifiables sont refusés. La section `ingestion` n’est jamais transmise dans une requête de mapping OpenSearch.
+
+Pour ajouter un champ : modifier le JSON, préciser `required`/`mutable` si nécessaire, puis exécuter `backup-index validate --all`, `backup-index apply jobs --dry-run` et `backup-index apply jobs`. Examiner ensuite `backup-index scripts install --all --dry-run`, puis publier explicitement avec `backup-index scripts install --all --replace`. Adapter `jobs` à l’index concerné. La modification d’un mapping ne remplace pas automatiquement les scripts du cluster.
+
 ```bash
-python main.py scripts list
-python main.py scripts check --all
-python main.py scripts install --all --dry-run
+backup-index scripts list
+backup-index scripts check --all
+backup-index scripts install --all --dry-run
 # Seulement lors d'une action administrative volontaire :
-python main.py scripts install --all
+backup-index scripts install --all
 # Après examen du diff, remplacement explicite d'une définition différente :
-python main.py scripts install --all --replace
+backup-index scripts install --all --replace
 ```
 
 Trois scripts : `backup_jobs_upsert`, `backup_images_upsert`, `backup_configuration_upsert`. Les IDs restent fixes au niveau du cluster, même avec un autre préfixe d'index. Aucun script n'est installé automatiquement pendant le développement ou une création d'index. Le dry-run affiche les différences sans écrire ; un script différent bloque le lot sans `--replace`. Les résultats installés sont relus.
@@ -116,12 +140,12 @@ Le [contrat des paramètres, des états et de Bulk Update](docs/index-strategy.m
 ## Purge manuelle de l'historique
 
 ```bash
-python main.py purge history --keep 5 --dry-run
-python main.py purge history --older-than 90d --type slps --dry-run
-python main.py purge history --all --dry-run
-python main.py purge history --keep 5 --type policies
+backup-index purge history --keep 5 --dry-run
+backup-index purge history --older-than 90d --type slps --dry-run
+backup-index purge history --all --dry-run
+backup-index purge history --keep 5 --type policies
 # Confirmation explicite non interactive :
-python main.py purge history --keep 5 --type policies --yes
+backup-index purge history --keep 5 --type policies --yes
 ```
 
 Choisir une seule règle. Sans `--type`, policies et SLP sont ciblés, après vérification de leurs alias. Seuls les tableaux `history` sont modifiés sur les physiques déclarés : jamais le courant, ses dates ou son hash. Prévisualisation des documents et versions concernés ; confirmation interactive ou `--yes` obligatoire avant écriture.
@@ -133,10 +157,10 @@ La purge utilise `_update_by_query` limité aux IDs prévisualisés, avec contr�
 Les commandes d'essai existantes sont conservées, mais restent **distinctes** des créations, migrations et purges d'historique :
 
 ```bash
-python main.py clear jobs --dry-run
-python main.py delete jobs --dry-run
-python main.py clear jobs       # Confirmation avant suppression de tous les documents
-python main.py delete jobs      # Confirmation avant suppression du physique et de son alias
+backup-index clear jobs --dry-run
+backup-index delete jobs --dry-run
+backup-index clear jobs       # Confirmation avant suppression de tous les documents
+backup-index delete jobs      # Confirmation avant suppression du physique et de son alias
 ```
 
 `--yes` confirme explicitement sans interaction. Une seule cible déclarée, aucun `--all` ni wildcard. `clear` conserve mapping/settings ; sur policies/SLP, il supprime aussi les configurations courantes. `delete` supprime le physique et l'alias qui lui est attaché ; cette conséquence est annoncée dans le plan/confirmation. Les fichiers JSON et scripts stockés restent disponibles. Ce sont des opérations irréversibles, jamais déclenchées automatiquement par les autres commandes.
@@ -174,30 +198,32 @@ Pour `images-contents`, aucun script d’upsert n’est installé. Collector peu
 
 ```bash
 python -m pytest -q
-python main.py validate --all
+backup-index validate --all
 # Après configuration CIB, vérifications en lecture seulement :
-python main.py ping
-python main.py check --all
-python main.py scripts check --all
-python main.py scripts install --all --dry-run
+backup-index ping
+backup-index check --all
+backup-index scripts check --all
+backup-index scripts install --all --dry-run
 ```
 
 La suite normale utilise des mocks et ignore les tests d'intégration. Les tests Painless et alias réels sont préparés dans `tests/test_opensearch_integration.py`, avec opt-in, adresse fixe de boucle locale et vérification du nom de cluster. **Ils n'ont pas été exécutés sur cette révision** : les mocks et tests de contrats ne prouvent pas la compilation/exécution des nouveaux scripts. Aucune connexion ou modification de cluster n'est effectuée pendant cette implémentation.
 
 Avant une création volontaire, valider les droits CIB, la topologie, les conflits d'alias, les unités des compteurs, les dates ISO-8601, l'identité stable des exécutions/copies et le contrat des scripts dans un environnement de qualification dédié.
 
-Codes de sortie : 0 succès ; 1 exécution/connexion/échec partiel ; 2 configuration, validation ou incompatibilité (`check` non conforme inclus). `python main.py --help` affiche toutes les commandes.
+Codes de sortie : 0 succès ; 1 exécution/connexion/échec partiel ; 2 configuration, validation ou incompatibilité (`check` non conforme inclus). `backup-index --help` affiche toutes les commandes.
 
 ## Structure
 
 ```text
-main.py             lanceur de la CLI
-app/                configuration, validation/comparaison, index/alias, scripts, purge, CLI
+main.py             point d’entrée de la CLI
+install.py          installe la commande backup-index dans le venv actif
+app/                services : mappings, ingestion, génération, index, scripts, purge
+app/commands/       commandes séparées : index, scripts, historique, suppressions
 requirements.txt    dépendances d’exécution
 requirements-dev.txt dépendances des tests
 pytest.ini          configuration des tests
 mappings/           jobs.json, images.json, images-contents.json, policies.json, slps.json
-scripts/            trois scripts Painless
+scripts/            trois modèles Painless métier
 catalog/netbackup/  quatre catalogues indépendants
 tests/              tests unitaires et intégration locale opt-in
 docs/               installations, stratégie, audit et sources

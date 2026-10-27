@@ -4,25 +4,14 @@ from pathlib import Path
 
 from opensearchpy.exceptions import NotFoundError
 
-from app.config import PROJECT_ROOT
 from app.mappings import MappingError
 
-SCRIPT_NAMES = ('jobs_upsert', 'images_upsert', 'configuration_upsert')
 
-
-def load_scripts(directory: Path | None = None) -> dict[str, str]:
-    directory = directory or PROJECT_ROOT / 'scripts'
-    result = {}
-    for name in SCRIPT_NAMES:
-        path = directory / f'{name}.painless'
-        try:
-            source = path.read_text(encoding='utf-8')
-        except OSError:
-            raise MappingError(f'{path.name} : lecture du script impossible') from None
-        if not source.strip():
-            raise MappingError(f'{path.name} : script vide')
-        result[f'backup_{name}'] = source
-    return result
+def load_scripts(directory: Path | None = None, *, mappings_dir: Path | None = None,
+                 prefix: str = 'backup') -> dict[str, str]:
+    """Regénérer les sources depuis les mappings, sans écrire de fichier ni contacter le cluster."""
+    from app.script_generation import generate_scripts
+    return generate_scripts(directory, mappings_dir=mappings_dir, prefix=prefix)
 
 
 def script_plan(client, sources: dict[str, str]) -> list[dict]:

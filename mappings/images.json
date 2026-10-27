@@ -73,5 +73,30 @@
         "type": "date"
       }
     }
+  },
+  "ingestion": {
+    "required": [
+      "master_server",
+      "image_id",
+      "updated_at"
+    ],
+    "identity": [
+      "master_server",
+      "image_id"
+    ],
+    "mutable": [
+      "backup_id",
+      "client",
+      "policy",
+      "policy_type",
+      "schedule",
+      "schedule_type",
+      "retention_level",
+      "storage_location",
+      "backup_time",
+      "expiration_time",
+      "copy_number",
+      "kilobytes"
+    ]
   }
 }

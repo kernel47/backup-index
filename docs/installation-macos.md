@@ -12,6 +12,7 @@ Dans le dossier du projet :
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+python install.py
 cp .env.example .env
 chmod 600 .env
 ```
@@ -19,21 +20,21 @@ chmod 600 .env
 Dans `.env`, renseigner l'URL HTTPS du cluster, le nom d'utilisateur et le mot de passe autorisés par CIB. Obtenir le fichier CA interne PEM auprès de CIB et définir, par exemple, `OPENSEARCH_CA_CERT=/chemin/ca-cib.pem`. Garder `OPENSEARCH_VERIFY_SSL=true` et vérifier que le nom de l'URL correspond au certificat. Utiliser un chemin absolu pour un certificat partagé.
 
 ```bash
-python main.py validate --all
-python main.py ping
-python main.py list
-python main.py create jobs
-python main.py check jobs
-python main.py info jobs
-python main.py apply jobs --dry-run
+backup-index validate --all
+backup-index ping
+backup-index list
+backup-index create jobs
+backup-index check jobs
+backup-index info jobs
+backup-index apply jobs --dry-run
 ```
 
-`ping` et les commandes distantes nécessitent l'accès réseau CIB. `create` crée réellement un index s'il est absent ; valider les valeurs initiales de shards/répliques avant de l'utiliser. Les exemples partent du dossier du projet. Depuis un autre dossier, utiliser `python /chemin/backup-index/main.py validate --all` ; les chemins par défaut restent ancrés au projet. Conserver `main.py`, `app/`, `mappings/` et `scripts/` ensemble.
+`ping` et les commandes distantes nécessitent l'accès réseau CIB. `create` crée réellement un index s'il est absent ; valider les valeurs initiales de shards/répliques avant de l'utiliser. Les exemples partent du dossier du projet. Depuis un autre dossier, utiliser aussi `backup-index validate --all` avec le venv activé ; les chemins par défaut restent ancrés au projet. Conserver `main.py`, `app/`, `mappings/` et `scripts/` ensemble. `python install.py` installe le lanceur dans le venv actif ; le réexécuter si le projet change de dossier.
 
 Pour une configuration distincte :
 
 ```bash
-python main.py --env-file /chemin/config/.env validate --all
+backup-index --env-file /chemin/config/.env validate --all
 ```
 
 Les chemins relatifs CA/mappings sont alors résolus depuis ce fichier. Pour les tests locaux :
@@ -48,10 +49,10 @@ python -m pytest -q
 Après configuration, examiner les scripts sans les installer implicitement :
 
 ```bash
-python main.py scripts list
-python main.py scripts check --all
-python main.py scripts install --all --dry-run
-python main.py purge history --keep 5 --dry-run
+backup-index scripts list
+backup-index scripts check --all
+backup-index scripts install --all --dry-run
+backup-index purge history --keep 5 --dry-run
 ```
 
 Ces dry-runs ne modifient pas le cluster. L’installation réelle des scripts exige une commande explicite ; la purge réelle demande confirmation ou `--yes`. `HISTORY_MAX_VERSIONS=10` prépare le contrat de la future ingestion, sans modifier les mappings ni purger périodiquement les données. Voir [la stratégie V2](index-strategy.md) et [le catalogue documentaire](netbackup-attributes.md).

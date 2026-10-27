@@ -67,7 +67,7 @@ def test_concurrent_script_change_refused():
 def test_install_dry_run(monkeypatch):
     client = MagicMock()
     client.get_script.return_value = {'script': {'lang': 'painless', 'source': 'old'}}
-    monkeypatch.setattr('app.cli.create_client', lambda _: client)
+    monkeypatch.setattr('app.commands.runtime.create_client', lambda _: client)
     result = CliRunner().invoke(app, ['scripts', 'install', '--all', '--dry-run'])
     assert result.exit_code == 0, result.output
     assert 'DIFFERENT' in result.output and 'DRY-RUN' in result.output
@@ -114,7 +114,7 @@ def test_ingestion_script_fields_match_current_mappings():
         allowed = ast.literal_eval(re.search(r'def allowed = (\[[^;]+\]);', source)[1])
         assert set(allowed) == set(documents[kind]['mappings']['properties']) - {'created_at'}
     source = sources['backup_configuration_upsert']
-    base = set(ast.literal_eval(re.search(r'def allowed = (\[[^;]+\]);', source)[1]))
-    branches = re.findall(r'allowed.addAll\((\[[^;]+\])\)', source)
+    branches = re.findall(r'allowed = (\[[^;]+\]);', source)
+    assert len(branches) == 2
     for kind, branch in zip(('policies', 'slps'), branches):
-        assert base | set(ast.literal_eval(branch)) == set(documents[kind]['mappings']['properties']) - {'history', 'created_at'}
+        assert set(ast.literal_eval(branch)) == set(documents[kind]['mappings']['properties']) - {'history', 'created_at'}
